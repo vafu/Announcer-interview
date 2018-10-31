@@ -17,6 +17,18 @@ class AnnouncerTest {
     }
 
     @Test
+    fun `subscription adds and is invoking successfully`() {
+        val subscription: Observer<String> = mock {
+            on { invoke(any()) } doReturn println("test")
+        }
+        subject.addSubscription(0, subscription)
+
+        subject.notifyAll("test")
+
+        verify(subscription, only()).invoke(any())
+    }
+
+    @Test
     fun `filter is working correctly`() {
         val subscriptions = Array(5) { createObserver() }
 
@@ -33,19 +45,7 @@ class AnnouncerTest {
     }
 
     @Test
-    fun `subscription adds and is invoking successfully`() {
-        val subscription: Observer<String> = mock {
-            on { invoke(any()) } doReturn println("test")
-        }
-        subject.addSubscription(0, subscription)
-
-        subject.notifyFiltered("test") { it == 0 }
-
-        verify(subscription, only()).invoke(any())
-    }
-
-    @Test
-    fun `for all subscriptions invocation occures on notify`() {
+    fun `for all subscriptions invocation happens on notify`() {
         val subscriptions = Array(5) {
             mock<Observer<String>> {
                 on { invoke(any()) } doReturn println("test")

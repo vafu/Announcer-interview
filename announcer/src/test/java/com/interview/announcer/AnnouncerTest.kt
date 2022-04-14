@@ -1,29 +1,23 @@
-package com.vfuchedzhy.announcer
+package com.interview.announcer
 
-import com.nhaarman.mockitokotlin2.*
-import org.junit.After
 import org.junit.Test
-import java.util.*
+import org.mockito.kotlin.*
+import kotlin.random.Random
 
-private val random = Random()
+private typealias Observer<T> = (T) -> Unit
 
 class AnnouncerTest {
 
-    private val subject: Announcer<String> = AnnouncerCreator.createAnnouncer()
-
-    @After
-    fun afterEach() {
-        subject.clear()
-    }
+    private val subject: Announcer<String> = Announcers.create()
 
     @Test
     fun `subscription adds and is invoking successfully`() {
         val subscription: Observer<String> = mock {
             on { invoke(any()) } doReturn println("test")
         }
-        subject.addSubscription(0, subscription)
+        subject.subscribe(0, subscription)
 
-        subject.notifyAll("test")
+        subject.notify("test")
 
         verify(subscription, only()).invoke(any())
     }
@@ -32,9 +26,9 @@ class AnnouncerTest {
     fun `filter is working correctly`() {
         val subscriptions = Array(5) { createObserver() }
 
-        subscriptions.forEachIndexed { index, observer -> subject.addSubscription(index, observer) }
+        subscriptions.forEachIndexed { index, observer -> subject.subscribe(index, observer) }
 
-        val priorityRule: PriorityRule = { it % 2 == 0 }
+        val priorityRule: (Int) -> Boolean = { it % 2 == 0 }
 
         subject.notifyFiltered("test", priorityRule)
 
@@ -52,9 +46,9 @@ class AnnouncerTest {
             }
         }
 
-        subscriptions.forEachIndexed { index, observer -> subject.addSubscription(index, observer) }
+        subscriptions.forEachIndexed { index, observer -> subject.subscribe(index, observer) }
 
-        subject.notifyAll("test")
+        subject.notify("test")
 
         subscriptions.forEach { verify(it, only()).invoke(any()) }
     }
@@ -62,14 +56,14 @@ class AnnouncerTest {
     @Test
     fun `subscriptions are invoked depending on priority`() {
         val subscriptions = Array(5) {
-            createObserver() to random.nextInt(100)
+            createObserver() to Random.nextInt(100)
         }
 
         subscriptions.forEach { (observer, priority) ->
-            subject.addSubscription(priority, observer)
+            subject.subscribe(priority, observer)
         }
 
-        subject.notifyAll("test")
+        subject.notify("test")
 
         val sortedByPriority = subscriptions
                 .sortedBy { (_, priority) -> priority }
@@ -89,9 +83,9 @@ class AnnouncerTest {
 
         val subscriptions = Array<Observer<String>>(listSize) { { message: String -> resultList.add(message) } }
 
-        subscriptions.forEachIndexed { index, observer -> subject.addSubscription(index, observer) }
+        subscriptions.forEachIndexed { index, observer -> subject.subscribe(index, observer) }
 
-        subject.notifyAll(testMessage)
+        subject.notify(testMessage)
 
         assert(resultList.size == listSize)
         assert(resultList.all { it == testMessage })
@@ -101,9 +95,9 @@ class AnnouncerTest {
     fun `items with same priority are processed in order`() {
         val subscriptions = Array(5) { createObserver() }
 
-        subscriptions.forEach { observer -> subject.addSubscription(0, observer) }
+        subscriptions.forEach { observer -> subject.subscribe(0, observer) }
 
-        subject.notifyAll("test")
+        subject.notify("test")
 
         subscriptions.forEach { verify(it, only()).invoke(any()) }
     }
@@ -112,11 +106,11 @@ class AnnouncerTest {
     fun `removing works correctly`() {
         val subscriptions = Array(5) { createObserver() }
 
-        subscriptions.forEachIndexed { index, observer -> subject.addSubscription(index, observer) }
+        val closeables = subscriptions.mapIndexed { index, observer -> subject.subscribe(index, observer) }
 
         val removedIndex = 3
-        subject.removeSubsription(subscriptions[removedIndex])
-        subject.notifyAll("test")
+        closeables[removedIndex].close()
+        subject.notify("test")
 
         subscriptions.forEachIndexed { index, observer ->
             val resolution = if (index == removedIndex) never() else only()

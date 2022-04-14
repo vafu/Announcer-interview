@@ -1,25 +1,7 @@
-apply plugin: 'java-library'
 apply plugin: 'kotlin'
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    testImplementation "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0-RC1"
-    implementation 'junit:junit:4.12'
-}
-
-sourceCompatibility = "7"
-targetCompatibility = "7"
-repositories {
-    mavenCentral()
-}
-compileKotlin {
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-}
-compileTestKotlin {
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:4.0.0"
+    implementation 'junit:junit:4.13.2'
 }
